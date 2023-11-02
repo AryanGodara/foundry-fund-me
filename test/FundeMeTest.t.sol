@@ -57,4 +57,13 @@ contract FundMeTest is Test {
         uint256 amountFunded = fundMe.getAddressToAmoundfunded(USER);
         assertEq(amountFunded, SEND_VALUE, "Amount funded should be 10");
     }
+    
+    function testAddsFunderToArrayOfFunders() public {
+        //* Each test first runs setup(), so the funders array will be new and empty before this test runs ;)
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+
+        address funder = fundMe.getFunder(0); // This should be user, as this the first amount being added
+        assertEq(funder, USER, "Funder should be USER");
+    }
 }
