@@ -50,20 +50,65 @@ contract FundMeTest is Test {
         fundMe.fund(); // Send 0 value
     }
 
-    function testFundUpdatesFundDataStructure() public {
-        vm.prank(USER); // The next transaction will be from USER (instead of msg.sender, or address(this))
+    modifier funded() {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_VALUE}();
+        _; // Run the test function
+    }
 
-        fundMe.fund{value: SEND_VALUE}(); // Send 10 ETH (Definitely greater than MINIMUM_USD)
+    function testFundUpdatesFundDataStructure() public funded {
+        // vm.prank(USER); // The next transaction will be from USER (instead of msg.sender, or address(this))
+        // fundMe.fund{value: SEND_VALUE}(); // Send 10 ETH (Definitely greater than MINIMUM_USD)
+        
         uint256 amountFunded = fundMe.getAddressToAmoundfunded(USER);
         assertEq(amountFunded, SEND_VALUE, "Amount funded should be 10");
     }
     
-    function testAddsFunderToArrayOfFunders() public {
+    function testAddsFunderToArrayOfFunders() public funded {
         //* Each test first runs setup(), so the funders array will be new and empty before this test runs ;)
-        vm.prank(USER);
-        fundMe.fund{value: SEND_VALUE}();
+        // vm.prank(USER);//! --> Use Modifier instead
+        // fundMe.fund{value: SEND_VALUE}();
 
         address funder = fundMe.getFunder(0); // This should be user, as this the first amount being added
         assertEq(funder, USER, "Funder should be USER");
     }
+
+
+    function testOnlyOwnerCanWithdraw() public funded {
+        /* 
+        TODO: 1. Fund the contract (as USER)
+        TODO: 2. Try to withdraw funds (as USER) and not the owner, //!this should fail
+        */
+
+    //    vm.prank(USER); --> //! User modifier instead
+    //    fundMe.fund{value: SEND_VALUE}();
+
+       vm.expectRevert(); // Should fail
+       vm.prank(USER);
+       fundMe.withdraw();
+    }
 }
+
+/*
+ * NOTE:
+ ? vm cheatcodes work on the very next statement, and ignore other vm cheatcodes below them
+ ? vm cheatcodes are reset after each test
+ 
+ * vm cheatcodes:
+    ? vm.expectRevert() - Expect the next transaction to revert
+    ? vm.prank(address) - Pretend to be the address for the next transaction
+    ? vm.deal(address, amount) - Send amount ETH to address
+    ? vm.startBroadcast() - Start a broadcast, which will ignore all vm cheatcodes below it
+    ? vm.stopBroadcast() - Stop a broadcast, which will ignore all vm cheatcodes below it
+    ? vm.reset() - Reset the vm, which will ignore all vm cheatcodes below it
+    ? vm.log(string) - Log a string to the console
+    ? vm.log(string, uint256) - Log a string and a uint256 to the console
+    ? vm.log(string, address) - Log a string and an address to the console
+    ? vm.log(string, bytes32) - Log a string and a bytes32 to the console
+    ? vm.log(string, bytes) - Log a string and a bytes to the console
+    ? vm.log(string, bool) - Log a string and a bool to the console
+    ? vm.log(string, int256) - Log a string and an int256 to the console
+    ? vm.log(string, uint256, uint256) - Log a string and two uint256s to the console
+    ? vm.log(string, uint256, uint256, uint256) - Log a string and three uint256s to the console
+    ? vm.log(string, uint256, uint256, uint256, uint256) - Log a string and four uint256s to the console
+*/
