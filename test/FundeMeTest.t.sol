@@ -8,7 +8,8 @@ contract FundMeTest is Test {
     FundMe fundMe;
     function setUp() external {
         // This is where we deploy our contract
-        fundMe = new FundMe();
+        fundMe = new FundMe(0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        // Address found on : https://docs.chain.link/data-feeds/api-reference (Google: `chainlink aggregatorv3interface address`)
     }
 
     function testMinimumDollarIsFive() public {
