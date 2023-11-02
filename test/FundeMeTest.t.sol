@@ -41,4 +41,13 @@ contract FundMeTest is Test {
         uint256 version = fundMe.getVersion();
         assertEq(version, 4, "Version should be 4");
     }
+
+    function testFundFailWithoutEnoughEth() public {
+        vm.expectRevert("You need to spend more ETH!"); //! Should Fail
+        fundMe.fund(); // Send 0 value
+    }
+
+    function testFundUpdatesFundDataStructure() public {
+        fundMe.fund{value: 10e18}(); // Send 10 ETH (Definitely greater than MINIMUM_USD)
+    }
 }
