@@ -28,14 +28,14 @@ contract FundMeTest is Test {
     function testOwnerIsMsgSender() public {
         // This is where we test our contract
         console.log("msg.sender", msg.sender);
-        console.log("i_owner", fundMe.i_owner());
+        console.log("i_owner", fundMe.getOwner());
         console.log("address(this)", address(this));
         //? We call setup -> setup calls contract Fundme, so instead of 'us' calling FundMe, we have the test contract call FundMe.
         //? So, the ownder is the test contract, not us.
         // ! assertEq(fundMe.i_owner(), msg.sender, "Minimum USD should be 5");
         // assertEq(fundMe.i_owner(), address(this), "Minimum USD should be 5");
 
-        assertEq(fundMe.i_owner(), msg.sender, "Minimum USD should be 5");
+        assertEq(fundMe.getOwner(), msg.sender, "Minimum USD should be 5");
         // We can go back to msg.sender now as we're using deploy script to initialize the tests now, instead of doing so manually
 
     }
@@ -87,13 +87,60 @@ contract FundMeTest is Test {
        vm.prank(USER);
        fundMe.withdraw();
     }
+
+    function testWithDrawWithASingleFunder() public funded {
+        // TODO: Arrage
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+        
+        // TODO: Act
+        vm.prank(fundMe.getOwner());
+        fundMe.withdraw(); // Withdraw all funds from the contract as the owner
+
+        // TODO: Assert
+        uint256 endingOwnerBalance = fundMe.getOwner().balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+
+        assertEq(endingOwnerBalance - startingOwnerBalance, startingFundMeBalance, "Owner should have received all funds");
+        assertEq(endingFundMeBalance, 0, "FundMe contract should have 0 balance"); 
+    }
+
+    function testWithDrawWithMultipleFunders() public funded {
+        // TODO: Arrage
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 1; // Start at 1, as we already have 1 funder (USER)
+
+        for (uint160 i = startingFunderIndex ; i < numberOfFunders ; i++) { // Send 10 ETH to the contract, from 10 different funders
+            //TODO: Prank new address
+            //TODO: vm.deal new address
+            //* hoax works as prank and deal combined ;)
+            hoax(address(i), SEND_VALUE); // address has 160 bits, so it is directly type casted to address
+            //TODO: Fund the contract
+            fundMe.fund{value: SEND_VALUE}(); 
+        }
+
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;   // Initial owner balance
+        uint256 startingFundMeBalance = address(fundMe).balance;    // Total current amount from all senders in the contract
+        
+        // TODO: Act
+        vm.startPrank(fundMe.getOwner());
+        fundMe.withdraw(); // Withdraw all funds from the contract as the owner
+        vm.stopPrank();
+
+        // TODO: Assert
+        uint256 endingOwnerBalance = fundMe.getOwner().balance;   // Final owner balance
+        uint256 endingFundMeBalance = address(fundMe).balance;    // Total current amount from all senders in the contract
+
+        assertEq(endingOwnerBalance - startingOwnerBalance, startingFundMeBalance, "Owner should have received all funds");
+        assertEq(endingFundMeBalance, 0, "FundMe contract should have 0 balance"); 
+    }
 }
 
 /*
  * NOTE:
  ? vm cheatcodes work on the very next statement, and ignore other vm cheatcodes below them
  ? vm cheatcodes are reset after each test
- 
+
  * vm cheatcodes:
     ? vm.expectRevert() - Expect the next transaction to revert
     ? vm.prank(address) - Pretend to be the address for the next transaction
