@@ -7,14 +7,17 @@ import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     FundMe fundMe;
+    address USER = makeAddr("user");
+
+    uint256 constant SEND_VALUE = 0.1 ether; // 1 ether = 10^18 wei = 1e18 wei
+    uint256 constant START_BALANCE = 10 ether;
+
     function setUp() external {
         // This is where we deploy our contract
-        // fundMe = new FundMe(0x694AA1769357215DE4FAC081bf1f309aDC325306);
-        // Address found on : https://docs.chain.link/data-feeds/api-reference (Google: `chainlink aggregatorv3interface address`)
         
-        //* Use deploy script in test
         DeployFundMe deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();    // Returns a new Fundme() contract, which is set to contract variable above.
+        vm.deal(USER, START_BALANCE);   // Give USER 10 ETH (to fund the contract, for running tests)
     }
 
     function testMinimumDollarIsFive() public {
@@ -48,6 +51,10 @@ contract FundMeTest is Test {
     }
 
     function testFundUpdatesFundDataStructure() public {
-        fundMe.fund{value: 10e18}(); // Send 10 ETH (Definitely greater than MINIMUM_USD)
+        vm.prank(USER); // The next transaction will be from USER (instead of msg.sender, or address(this))
+
+        fundMe.fund{value: SEND_VALUE}(); // Send 10 ETH (Definitely greater than MINIMUM_USD)
+        uint256 amountFunded = fundMe.getAddressToAmoundfunded(USER);
+        assertEq(amountFunded, SEND_VALUE, "Amount funded should be 10");
     }
 }
